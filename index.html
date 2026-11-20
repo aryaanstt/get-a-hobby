@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@400..700&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="app.css?v=3">
 </head>
 <body>
 <div class="wrap">
@@ -20,14 +20,17 @@
     <a class="logo" href="#beranda" aria-label="get a hobby, beranda"><span class="wm-get" aria-hidden="true"><span class="kap">get</span> <span class="aks">a</span> hobby<span class="aks">.</span></span></a>
     <span class="spasi"></span>
     <a class="btn tipis" href="#kuis">Kuis hobi</a>
+    <a id="akun-btn" class="btn utama kecil-btn" href="#masuk" hidden>Masuk</a>
     <button class="ikon-btn" id="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
   </header>
   <main id="hal"><noscript>get a hobby butuh JavaScript buat jalan.</noscript></main>
   <footer class="kaki">
     <span><span class="wm-get kecil-wm"><span class="kap">get</span> <span class="aks">a</span> hobby<span class="aks">.</span></span> <a class="redup bagian-dari" href="../get-it/">bagian dari <b>get it</b></a></span>
-    <span class="redup kecil">Harga cuma kisaran, cek lagi sebelum beli. Progres tantangan disimpan di perangkat ini.</span>
+    <span class="redup kecil">Harga cuma kisaran, cek lagi sebelum beli. Masuk biar progres kesimpen di akun.</span>
   </footer>
 </div>
-<script src="app.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="materi.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

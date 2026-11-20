@@ -200,6 +200,69 @@ button { cursor: pointer; background: none; border: 0; padding: 0 }
 .langkah i { flex: 1; height: 5px; border-radius: 5px; background: var(--garis-ui) }
 .langkah i.on { background: var(--merek-isi) }
 
+/* akun */
+a.chip { text-decoration: none }
+.akun-bulet { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--merek-isi); color: #fff; font: 800 16px/1 var(--f-judul); text-decoration: none }
+.banner { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border-radius: 12px; background: var(--merek-bg); margin-bottom: 14px }
+.banner a { font-weight: 700; color: var(--merek) }
+.form { display: grid; gap: 12px }
+.form label { display: grid; gap: 6px; font-size: 13px; font-weight: 600 }
+.form input { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--garis-kuat); background: var(--panel-2) }
+.form input:focus { outline: 2px solid var(--merek-isi); outline-offset: 0 }
+.grid-ringkas { display: grid; gap: 8px; margin-top: 16px }
+.ringkas { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--garis-ui); text-decoration: none }
+.ringkas span { color: var(--redup); font-size: 13px }
+
+/* materi */
+.bab { margin-bottom: 14px }
+.bab-judul { display: flex; gap: 8px; align-items: baseline; margin-bottom: 6px }
+.bab-judul b { font-family: var(--f-judul); font-size: 17px }
+.pel { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--garis-ui); margin-bottom: 6px; text-decoration: none; font-weight: 600; font-size: 14.5px }
+.pel:hover { border-color: var(--garis-kuat); background: var(--panel-2) }
+.pel .cek { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--garis-kuat); display: grid; place-items: center }
+.pel.udah .cek { background: var(--merek-isi); border-color: var(--merek-isi); color: #fff }
+.judul-pel { font-size: clamp(24px, 3.4vw, 30px); margin: 6px 0 12px }
+.isi-pel { display: grid; gap: 10px; color: var(--ink-2); font-size: 15px; line-height: 1.65; max-width: 68ch }
+.isi-pel b { color: var(--ink) }
+.alat-pel { margin: 18px 0; padding-top: 16px; border-top: 1px dashed var(--garis-kuat) }
+.nav-pel { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--garis-ui) }
+.kuis-kecil .opsi { margin-top: 0 }
+.opsi button.benar { border-color: var(--ok); background: var(--ok-bg) }
+.opsi button.salah { border-color: var(--bad) }
+.opsi button:disabled { cursor: default }
+.ptk.akhir { box-shadow: inset 0 0 0 100px rgba(245, 163, 0, .32) }
+.ptk .koord.kf { left: auto; right: 3px; bottom: 1px }
+.tuts .mc { display: block; font-style: normal; font-size: 8px; margin-top: 2px; color: var(--merek-isi) }
+.tuts { flex-direction: column; justify-content: flex-end }
+.omc { display: flex; gap: 22px; margin: 10px 0 14px; flex-wrap: wrap }
+.omc .timer { font-size: 34px; margin-top: 4px }
+.omc-btn { min-width: 160px; min-height: 64px; font-size: 20px }
+.pola { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; margin: 12px 0 }
+.pola div { display: grid; justify-items: center; gap: 4px; padding: 10px 0; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--garis-ui) }
+.pola div b { font-size: 22px; line-height: 1 }
+.pola div span { font: 600 11px/1 var(--f-kode); color: var(--redup) }
+.pola div.kosong b { color: var(--redup) }
+.pola div.on { background: var(--merek-isi); color: #fff; border-color: transparent }
+.pola div.on span { color: #fff }
+.soal-besar { font-family: var(--f-judul); font-size: 22px; margin-bottom: 12px; min-height: 30px }
+.staff { width: 100%; max-width: 280px; color: var(--ink); display: block }
+.posisi-c { margin-bottom: 8px }
+.sticking { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; margin: 12px 0 }
+.sticking span { text-align: center; padding: 12px 0; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--garis-ui); font: 800 20px/1 var(--f-judul) }
+.sticking span.udah { color: var(--redup) }
+.sticking span.kini { background: var(--merek-isi); color: #fff; border-color: transparent }
+.lr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.lr .btn { min-height: 76px; font-size: 22px; line-height: 1.2 }
+.foto.wb .ruang { background: linear-gradient(#E9E4DA 0 62%, #B9A58A 62%) }
+.foto.wb .kertas { inset: auto; left: 34%; top: 30%; width: 32%; height: 40%; background: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); display: grid; place-items: center; font: 700 13px/1 var(--f-kode); color: #5B6577; transform: rotate(-4deg) }
+.foto.wb .cast { mix-blend-mode: multiply }
+.foto.bingkai { touch-action: none; user-select: none }
+.foto.bingkai .laut { top: 50%; background: #3F7FB0 }
+.grid3 { position: absolute; inset: 0; background: linear-gradient(90deg, transparent calc(33.33% - 1px), rgba(255, 255, 255, .7) calc(33.33% - 1px) calc(33.33% + 1px), transparent calc(33.33% + 1px) calc(66.66% - 1px), rgba(255, 255, 255, .7) calc(66.66% - 1px) calc(66.66% + 1px), transparent calc(66.66% + 1px)), linear-gradient(transparent calc(33.33% - 1px), rgba(255, 255, 255, .7) calc(33.33% - 1px) calc(33.33% + 1px), transparent calc(33.33% + 1px) calc(66.66% - 1px), rgba(255, 255, 255, .7) calc(66.66% - 1px) calc(66.66% + 1px), transparent calc(66.66% + 1px)); pointer-events: none }
+.objek { position: absolute; width: 11%; aspect-ratio: .7; transform: translate(-50%, -100%); background: radial-gradient(circle at 50% 35%, #D85A30 0 42%, transparent 43%), linear-gradient(90deg, transparent 44%, #6B4423 44% 56%, transparent 56%) 0 0 / 100% 100%; cursor: grab; z-index: 2 }
+.cakra { position: absolute; left: 0; right: 0; height: 14px; transform: translateY(-50%); cursor: ns-resize; z-index: 1 }
+.cakra::after { content: ''; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: #378ADD }
+
 @media (max-width: 860px) {
   .hero, .lay-hobi { grid-template-columns: minmax(0, 1fr) }
   .h-atas { grid-template-columns: minmax(0, 1fr) }
