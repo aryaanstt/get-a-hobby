@@ -266,6 +266,16 @@ a.chip { text-decoration: none }
 .cakra { position: absolute; left: 0; right: 0; height: 14px; transform: translateY(-50%); cursor: ns-resize; z-index: 1 }
 .cakra::after { content: ''; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: #378ADD }
 
+/* kuis harian dan alat tambahan */
+.harian-kartu { border-color: color-mix(in srgb, var(--merek-isi) 45%, var(--garis-ui)) }
+.tab-wrap { overflow-x: auto }
+.tab-g { display: grid; gap: 2px 0; font: 600 14px/1.6 var(--f-kode); min-width: 420px; background: var(--panel-2); border: 1px solid var(--garis-ui); border-radius: 10px; padding: 8px 10px }
+.tab-g span { text-align: center; color: var(--ink-2); border-bottom: 1px solid var(--garis-kuat) }
+.tab-g .tn { color: var(--redup); border-bottom: 0; text-align: left }
+.tab-g span.kini { background: var(--merek-isi); color: #fff; border-radius: 4px }
+.nilai-kotak { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 6px; font: 700 13px/1 var(--f-kode); text-align: center }
+.histo { width: 100%; height: auto; display: block; margin-top: 10px; background: var(--panel-2); border: 1px solid var(--garis-ui); border-radius: 10px }
+
 @media (max-width: 860px) {
   .hero, .lay-hobi { grid-template-columns: minmax(0, 1fr) }
   .h-atas { grid-template-columns: minmax(0, 1fr) }

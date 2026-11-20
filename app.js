@@ -9,7 +9,7 @@
   const KUNCI = 'gah'
   let S = {}
   try { S = JSON.parse(localStorage.getItem(KUNCI) || '{}') || {} } catch (e) { S = {} }
-  const rapi = () => { S.tant = S.tant || {}; S.selesai = S.selesai || {}; S.omc = S.omc || {} }
+  const rapi = () => { S.tant = S.tant || {}; S.selesai = S.selesai || {}; S.omc = S.omc || {}; S.harian = S.harian || {} }
   rapi()
   let jadwal = () => {}
   const simpan = () => { try { localStorage.setItem(KUNCI, JSON.stringify(S)) } catch (e) {} jadwal() }
@@ -28,6 +28,7 @@
       if (Array.isArray(v)) { o[k][h] = o[k][h] || []; v.forEach((x, i) => { if (x) o[k][h][i] = true }) }
       else { o[k][h] = Object.assign({}, o[k][h] || {}, Object.fromEntries(Object.entries(v || {}).filter(([, x]) => x))) } }) })
     o.omc = o.omc || {}; Object.entries((b || {}).omc || {}).forEach(([p, n]) => { o.omc[p] = Math.max(o.omc[p] || 0, n) })
+    o.harian = o.harian || {}; Object.entries((b || {}).harian || {}).forEach(([h, hari]) => { o.harian[h] = o.harian[h] || {}; Object.entries(hari || {}).forEach(([d, n]) => { o.harian[h][d] = Math.max(o.harian[h][d] || 0, n) }) })
     if (!o.kuis && b && b.kuis) o.kuis = b.kuis
     return o
   }
@@ -140,6 +141,18 @@
   const nSelesai = id => semuaPel(id).filter(p => (S.selesai[id] || {})[p.id]).length
   const nTant = id => (S.tant[id] || []).filter(Boolean).length
 
+  // ---------- kuis harian ----------
+  // 5 soal per hari dari bank (kuis-harian.js) + soal kuis di tiap pelajaran. Urutan diacak pakai benih per hobi,
+  // tiap hari ngambil 5 soal berikutnya, jadi beda dari kemarin dan baru ngulang setelah semua kebagian.
+  const N_HARIAN = 5
+  const hariIni = () => { const n = new Date(); return Math.floor((n.getTime() - n.getTimezoneOffset() * 60000) / 86400000) }
+  const benih = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) } return h >>> 0 }
+  const acakBenih = (arr, seed) => { const a = arr.slice(); let x = seed || 1; const r = () => { x = (x + 0x6D2B79F5) | 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a }
+  const kolamSoal = id => [...((window.BANK || {})[id] || []), ...semuaPel(id).flatMap(p => p.alat && p.alat.t === 'kuis' ? p.alat.soal : [])]
+  const soalHari = (id, d = hariIni()) => { const k = acakBenih(kolamSoal(id), benih(id)); if (!k.length) return []; return Array.from({ length: Math.min(N_HARIAN, k.length) }, (_, i) => k[(d * N_HARIAN + i) % k.length]) }
+  const skorHari = (id, d = hariIni()) => (S.harian[id] || {})[d]
+  const streakHarian = id => { let d = hariIni(); if (skorHari(id, d) === undefined) d--; let n = 0; while (skorHari(id, d) !== undefined) { n++; d-- } return n }
+
   // ---------- router ----------
   let bersih = []
   const tambahBersih = f => bersih.push(f)
@@ -181,7 +194,7 @@
           <span class="ikon">${ikon(h.id)}</span>
           <h3>${h.nama}</h3>
           <p>${h.ring}</p>
-          <div class="meta"><span>${t} pelajaran</span><span>${h.waktu.split(' sehari')[0]}</span></div>
+          <div class="meta"><span>${t} pelajaran</span><span>${skorHari(h.id) !== undefined ? 'kuis hari ini ✓' : 'kuis hari ini belum'}</span></div>
           <div><div class="kecil redup" style="margin-bottom:4px">Materi ${s}/${t}</div><div class="prog"><i style="width:${t ? s / t * 100 : 0}%"></i></div></div>
         </a>` }).join('')}
       </div>`
@@ -283,6 +296,10 @@
       <div class="lay-hobi">
         <section class="kartu pad main" id="kiri"></section>
         <div style="display:grid;gap:14px">
+          <section class="kartu pad harian-kartu"><span class="label">Kuis harian</span>
+            <h3 style="margin:6px 0 4px">${skorHari(h.id) !== undefined ? `Hari ini: ${skorHari(h.id)}/${N_HARIAN}` : `${N_HARIAN} soal baru hari ini`}</h3>
+            <p class="kecil redup">${streakHarian(h.id) ? `Streak ${streakHarian(h.id)} hari berturut-turut. ` : ''}Soalnya ganti tiap hari, beda dari kemarin.</p>
+            <a class="btn ${skorHari(h.id) !== undefined ? 'garis' : 'merek'} kecil-btn" href="#${h.id}-harian" style="margin-top:10px">${skorHari(h.id) !== undefined ? 'Liat atau ulang' : 'Kerjain sekarang'}</a></section>
           <section class="kartu pad tant"><h3>Progres</h3><div class="kecil redup">Materi ${nSelesai(h.id)} dari ${pel.length}</div><div class="pbar"><i style="width:${pel.length ? nSelesai(h.id) / pel.length * 100 : 0}%"></i></div>
             <div class="kecil redup" id="tant-info"></div><div class="pbar"><i id="tant-bar"></i></div>
             <h3 style="margin-top:6px">Tantangan 7 hari</h3>
@@ -296,6 +313,12 @@
     segarTant()
     const kiri = $('#kiri')
     if (modeMain) { kiri.innerHTML = '<h3>Main bebas</h3><div id="alat"></div>'; MAIN[h.id]($('#alat')); return }
+    if (sisa === 'harian') {
+      const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })
+      kiri.innerHTML = `<a class="balik" href="#${h.id}">← Daftar materi</a><span class="label">Kuis harian · ${tgl}</span><h2 class="judul-pel">${N_HARIAN} soal ${h.nama.toLowerCase()} hari ini</h2><p class="redup kecil">Soal diambil dari semua materi ${h.nama.toLowerCase()}. Besok ganti soal baru.</p><div id="alat" class="alat-pel"></div>`
+      ALAT.kuis($('#alat'), { soal: soalHari(h.id), selesai: (b, n) => { S.harian[h.id] = S.harian[h.id] || {}; S.harian[h.id][hariIni()] = Math.max(skorHari(h.id) || 0, b); simpan() } })
+      return
+    }
     if (lesIx < 0) {
       kiri.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><h3 style="margin:0">Daftar materi</h3>${lanjut ? `<a class="btn merek kecil-btn" href="#${h.id}-${lanjut.id}">${nSelesai(h.id) ? 'Lanjut belajar' : 'Mulai belajar'}</a>` : ''}</div>
         ${(MATERI[h.id] || []).map((b, i) => `<div class="bab"><div class="bab-judul"><span class="label">Bab ${i + 1}</span><b>${b.bab}</b></div>
@@ -327,11 +350,12 @@
   // ================= ALAT (mainan per pelajaran) =================
   const ALAT = {}
 
-  ALAT.kuis = (el, { soal }) => {
+  ALAT.kuis = (el, { soal, selesai }) => {
     let i = 0, benar = 0
     const tampil = () => {
-      if (i >= soal.length) { el.innerHTML = `<div class="kuis-kecil"><b>Skor ${benar}/${soal.length}.</b> ${benar === soal.length ? 'Sempurna!' : 'Baca lagi bagian yang salah, terus ulang.'} <button class="btn garis kecil-btn" id="kz-ulang">Ulang</button></div>`; $('#kz-ulang', el).onclick = () => { i = 0; benar = 0; tampil() }; return }
-      const s = soal[i]
+      if (i >= soal.length) { if (selesai) selesai(benar, soal.length); el.innerHTML = `<div class="kuis-kecil"><b>Skor ${benar}/${soal.length}.</b> ${benar === soal.length ? 'Sempurna!' : 'Baca lagi bagian yang salah, terus ulang.'} <button class="btn garis kecil-btn" id="kz-ulang">Ulang</button></div>`; $('#kz-ulang', el).onclick = () => { i = 0; benar = 0; tampil() }; return }
+      const asli = soal[i], urut = asli.ops.map((_, k) => k).sort(() => Math.random() - 0.5) // acak urutan pilihan biar jawaban ga selalu di posisi sama
+      const s = { ...asli, ops: urut.map(k => asli.ops[k]), b: urut.indexOf(asli.b) }
       el.innerHTML = `<div class="kuis-kecil"><span class="label">Cek pemahaman ${i + 1}/${soal.length}</span><p style="font-weight:700;margin:6px 0 10px">${s.q}</p><div class="opsi">${s.ops.map((o, k) => `<button data-k="${k}">${o}</button>`).join('')}</div><div class="pesan" id="kz-p"></div></div>`
       $$('.opsi button', el).forEach(b => b.onclick = () => {
         const k = +b.dataset.k, ok = k === s.b; if (ok) benar++
@@ -441,6 +465,8 @@
     mat1: { judul: 'Skakmat baris belakang', w: { g1: 'k', a1: 'r' }, b: { g8: 'k', f7: 'p', g7: 'p', h7: 'p' }, sol: ['a1', 'a8'], hint: 'Raja hitam kekunci pionnya sendiri.', ok: 'Skakmat baris belakang!' },
     mat2: { judul: 'Ratu dijagain raja', w: { f6: 'k', a7: 'q' }, b: { h8: 'k' }, sol: ['a7', 'g7'], hint: 'Ratu butuh dijagain raja biar ga bisa dimakan.', ok: 'Skakmat! Raja hitam ga bisa makan ratu karena dijagain raja putih.' },
     mat3: { judul: 'Skakmat tangga', w: { a1: 'k', a7: 'r', b1: 'r' }, b: { h8: 'k' }, sol: ['b1', 'b8'], hint: 'Satu benteng udah ngunci baris 7.', ok: 'Skakmat tangga!' },
+    buka: { judul: 'Serangan buka', w: { g1: 'k', d1: 'r', d3: 'b' }, b: { g8: 'k', d8: 'q', f7: 'p', g7: 'p', h7: 'p' }, sol: ['d3', 'h7'], hint: 'Gajah d3 ngehalangin benteng ke ratu d8. Gimana kalau gajahnya minggir sambil skak?', ok: 'Bxh7+! Skak sekaligus ngebuka serangan benteng ke ratu. Raja harus urus skak, terus Rxd8.' },
+    pembela: { judul: 'Hilangin pembela', w: { g1: 'k', b5: 'b', f3: 'n' }, b: { g8: 'k', c6: 'n', e5: 'p' }, sol: ['b5', 'c6'], hint: 'Pion e5 cuma dijaga satu bidak.', ok: 'Bxc6! Penjaga e5 hilang. Langkah berikutnya Nxe5.' },
     mat4: { judul: 'Smothered mate', w: { a1: 'k', g5: 'n' }, b: { h8: 'k', g8: 'r', g7: 'p', h7: 'p' }, sol: ['g5', 'f7'], hint: 'Raja hitam ketutup bidaknya sendiri. Bidak mana yang bisa loncat?', ok: 'Smothered mate! Raja kejepit bidaknya sendiri.' }
   }
   ALAT.puzzle = (el, { daftar }) => {
@@ -463,7 +489,8 @@
 
   // ---------- gitar ----------
   const SENAR = [40, 45, 50, 55, 59, 64], NAMA_S = ['E', 'A', 'D', 'G', 'B', 'e']
-  const KUNCI_G = { A: [-1, 0, 2, 2, 2, 0], D: [-1, -1, 0, 2, 3, 2], E: [0, 2, 2, 1, 0, 0], Am: [-1, 0, 2, 2, 1, 0], Em: [0, 2, 2, 0, 0, 0], Dm: [-1, -1, 0, 2, 3, 1], G: [3, 2, 0, 0, 0, 3], C: [-1, 3, 2, 0, 1, 0], F: [-1, -1, 3, 2, 1, 1] }
+  const KUNCI_G = { A: [-1, 0, 2, 2, 2, 0], D: [-1, -1, 0, 2, 3, 2], E: [0, 2, 2, 1, 0, 0], Am: [-1, 0, 2, 2, 1, 0], Em: [0, 2, 2, 0, 0, 0], Dm: [-1, -1, 0, 2, 3, 1], G: [3, 2, 0, 0, 0, 3], C: [-1, 3, 2, 0, 1, 0], F: [-1, -1, 3, 2, 1, 1], E5: [0, 2, 2, -1, -1, -1], A5: [-1, 0, 2, 2, -1, -1], G5: [3, 5, 5, -1, -1, -1], Fb: [1, 3, 3, 2, 1, 1], Bm: [-1, 2, 4, 4, 3, 2] }
+  const NAMA_K = k => ({ Fb: 'F (barre)' }[k] || k)
   function fretboard(el, jari, onSel) {
     let h = '<div class="fret-wrap"><div class="fret">'
     for (let s = 5; s >= 0; s--) {
@@ -482,8 +509,8 @@
   ALAT.kunci = (el, { daftar }) => {
     let kc = daftar[0]
     el.innerHTML = '<div id="kc-chip"></div><div id="fb"></div><div class="aksi" style="margin-top:12px"><button class="btn merek" id="jreng"></button></div><p class="kecil redup" style="margin-top:8px">Angka = nomor fret. × artinya senar itu ga dibunyiin. Pencet senar buat dengerin satu-satu.</p>'
-    const g = () => { fretboard($('#fb', el), KUNCI_G[kc], s => { const f = KUNCI_G[kc][s]; if (f >= 0) petik(hz(SENAR[s] + f)) }); $('#jreng', el).textContent = 'Genjreng ' + kc }
-    chipPilih($('#kc-chip', el), 'kc', daftar, kc, v => { kc = v; g(); genjreng($('#fb', el), KUNCI_G[kc]) })
+    const g = () => { fretboard($('#fb', el), KUNCI_G[kc], s => { const f = KUNCI_G[kc][s]; if (f >= 0) petik(hz(SENAR[s] + f)) }); $('#jreng', el).textContent = 'Genjreng ' + NAMA_K(kc) }
+    chipPilih($('#kc-chip', el), 'kc', daftar, kc, v => { kc = v; g(); genjreng($('#fb', el), KUNCI_G[kc]) }, NAMA_K)
     $('#jreng', el).onclick = () => genjreng($('#fb', el), KUNCI_G[kc])
     g()
   }
@@ -515,6 +542,34 @@
     $('#st-b', el).oninput = e => { bpm = +e.target.value; $('#st-bn', el).textContent = bpm; if (jalan) { clearInterval(jalan); jalan = setInterval(tik, 30000 / bpm) } }
     tambahBersih(henti); gambar()
   }
+  ALAT.tab = el => {
+    // Ode to Joy (Beethoven, domain publik) di senar e dan B. [senar, fret], senar 5 = e tipis.
+    const NOT = [[5, 0], [5, 0], [5, 1], [5, 3], [5, 3], [5, 1], [5, 0], [4, 3], [4, 1], [4, 1], [4, 3], [5, 0], [5, 0], [4, 3], [4, 3]]
+    let ix = -1, jalan = null
+    el.innerHTML = '<div class="tab-wrap"><div class="tab-g" id="tb"></div></div><div id="fb" style="margin-top:12px"></div><div class="aksi" style="margin-top:12px"><button class="btn merek" id="tb-m">Mainin</button></div><p class="kecil redup" style="margin-top:8px">Garis atas = senar e tipis. Angka = fret yang ditekan.</p>'
+    const gambar = () => {
+      let h = ''
+      for (let s = 5; s >= 0; s--) { h += `<span class="tn">${NAMA_S[s]}</span>`; NOT.forEach(([ss, f], i) => { h += `<span class="${i === ix ? 'kini' : ''}">${ss === s ? f : '–'}</span>` }) }
+      $('#tb', el).innerHTML = h; $('#tb', el).style.gridTemplateColumns = `24px repeat(${NOT.length}, minmax(22px, 1fr))`
+      const jari = [-1, -1, -1, -1, -1, -1]; if (ix >= 0) jari[NOT[ix][0]] = NOT[ix][1]; fretboard($('#fb', el), jari.map(x => x), () => {})
+    }
+    const stop = () => { clearInterval(jalan); jalan = null; $('#tb-m', el).textContent = 'Mainin' }
+    $('#tb-m', el).onclick = () => { if (jalan) return stop(); ix = -1; jalan = setInterval(() => { ix++; if (ix >= NOT.length) { stop(); ix = -1; gambar(); return } const [s, f] = NOT[ix]; petik(hz(SENAR[s] + f)); gambar() }, 420); $('#tb-m', el).textContent = 'Berhenti' }
+    tambahBersih(stop); gambar()
+  }
+  ALAT.petik = el => {
+    const POLA = ['p', 'i', 'm', 'a', 'm', 'i'], SNR = { i: 3, m: 4, a: 5 }
+    let kc = 'C', bpm = 90, k = 0, jalan = null
+    el.innerHTML = '<div id="pt-k"></div><div id="fb"></div><div class="pola" id="pt-v" style="grid-template-columns:repeat(6,minmax(0,1fr))"></div><div class="kontrol"><button class="btn merek" id="pt-m">Mulai</button><label class="kecil">Tempo <input type="range" id="pt-b" min="60" max="140" value="90"> <b id="pt-bn">90</b> bpm</label></div>'
+    const bass = () => KUNCI_G[kc].findIndex(f => f >= 0)
+    const gambar = (aktif = -1) => { $('#pt-v', el).innerHTML = POLA.map((x, i) => `<div class="${i === aktif ? 'on' : ''}"><b>${x}</b><span>${x === 'p' ? NAMA_S[bass()] : NAMA_S[SNR[x]]}</span></div>`).join('') }
+    const tik = () => { const x = POLA[k], s = x === 'p' ? bass() : SNR[x], f = KUNCI_G[kc][s]; if (f >= 0) petik(hz(SENAR[s] + f), 0, 0.28); gambar(k); k = (k + 1) % POLA.length }
+    const stop = () => { clearInterval(jalan); jalan = null; $('#pt-m', el).textContent = 'Mulai'; gambar() }
+    chipPilih($('#pt-k', el), 'pt', ['C', 'G', 'Am', 'Em', 'D'], kc, v => { kc = v; fretboard($('#fb', el), KUNCI_G[kc], () => {}); gambar() })
+    $('#pt-m', el).onclick = () => { if (jalan) return stop(); k = 0; tik(); jalan = setInterval(tik, 30000 / bpm); $('#pt-m', el).textContent = 'Berhenti' }
+    $('#pt-b', el).oninput = e => { bpm = +e.target.value; $('#pt-bn', el).textContent = bpm; if (jalan) { clearInterval(jalan); jalan = setInterval(tik, 30000 / bpm) } }
+    fretboard($('#fb', el), KUNCI_G[kc], () => {}); tambahBersih(stop); gambar()
+  }
   ALAT.progresi = el => {
     const prog = ['C', 'G', 'Am', 'F']; let bpm = 70, ix = 0, ketuk = 0, jalan = null
     el.innerHTML = `<div class="tab-baris" id="urut">${prog.map((x, i) => `<span class="chip" data-i="${i}">${x}</span>`).join('')}</div><div id="fb"></div><div class="kontrol"><button class="btn merek" id="main">Mulai</button><label class="kecil">Tempo <input type="range" id="bpm" min="50" max="110" value="70"> <b id="bpm-n">70</b> bpm</label></div><p class="kecil redup" style="margin-top:8px">Tiap kunci 4 ketukan. Pindah jari pas kuncinya ganti.</p>`
@@ -542,12 +597,12 @@
     tambahBersih(() => { if (pianoAktif === tekan) pianoAktif = null })
     return { tandai: ms => { const a = [].concat(ms); $$('.tuts', el).forEach(b => b.classList.toggle('next', a.includes(+b.dataset.m))) } }
   }
-  const LAGU = { 'Tangga nada C': [60, 62, 64, 65, 67, 69, 71, 72], 'Bintang Kecil': [60, 60, 67, 67, 69, 69, 67, 65, 65, 64, 64, 62, 62, 60], 'Ode to Joy': [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] }
+  const LAGU = { 'Tangga nada C': [60, 62, 64, 65, 67, 69, 71, 72], 'Tangga nada G': [67, 69, 71, 72, 74, 76, 78, 79], 'Bintang Kecil': [60, 60, 67, 67, 69, 69, 67, 65, 65, 64, 64, 62, 62, 60], 'Ode to Joy': [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] }
   ALAT.lagu = (el, opt = {}) => {
     let judul = opt.awal || 'Tangga nada C', ix = 0, pn
     el.innerHTML = '<div id="lg-chip"></div><div class="not-baris" id="not"></div><div id="pn"></div><div class="pesan" id="pn-p"></div>'
     const notBaris = () => { $('#not', el).innerHTML = LAGU[judul].map((m, i) => `<span class="${i < ix ? 'udah' : i === ix ? 'kini' : ''}">${NOTA[m % 12]}</span>`).join('') }
-    const mulai = () => { ix = 0; notBaris(); pn = piano($('#pn', el), 60, 72, m => {
+    const mulai = () => { ix = 0; notBaris(); pn = piano($('#pn', el), 60, Math.max(...LAGU[judul]) > 72 ? 84 : 72, m => {
       const L = LAGU[judul]; if (ix >= L.length) return
       if (m === L[ix]) { ix++; pesanDi($('#pn-p', el), ''); if (ix === L.length) { pesanDi($('#pn-p', el), `Mantap, ${judul} selesai!`, 'ok'); pn.tandai(-1) } else pn.tandai(L[ix]) }
       else pesanDi($('#pn-p', el), `Ups, harusnya ${NOTA[L[ix] % 12]}. Cari tuts yang ditandain oranye.`, 'salah')
@@ -578,17 +633,32 @@
       s += `<ellipse cx="120" cy="${y}" rx="9" ry="6.5" transform="rotate(-20 120 ${y})" fill="currentColor"/><line x1="${st >= 4 ? 111.5 : 128.5}" x2="${st >= 4 ? 111.5 : 128.5}" y1="${y}" y2="${st >= 4 ? y + 44 : y - 44}" stroke="currentColor" stroke-width="1.6"/></svg>`; return s }
     kuisTuts(el, () => { const [m, st] = NOT[Math.floor(Math.random() * NOT.length)]; return { m, st, cek: x => x === m, salah: x => `Itu ${NOTA[x % 12]}${Math.floor(x / 12) - 1}. Hitung dari C tengah (garis tambahan di bawah).` } }, s => staff(s.st))
   }
-  ALAT.akor = el => {
-    const AK = { C: [60, 64, 67], F: [65, 69, 72], G: [67, 71, 74], Am: [69, 72, 76] }
-    el.innerHTML = '<div id="ak-chip"></div><div id="pn"></div><p class="kecil redup" style="margin-top:8px">Pilih akor buat liat dan dengerin 3 nadanya. Coba pencet sendiri barengan.</p>'
-    const pn = piano($('#pn', el), 60, 77, null)
-    chipPilih($('#ak-chip', el), 'ak', Object.keys(AK), '', v => { pn.tandai(AK[v]); AK[v].forEach((m, i) => setTimeout(() => tutsSuara(m, 0.22), i * 30)) })
+  ALAT.akor = (el, opt = {}) => {
+    const AK = opt.inversi
+      ? { 'C': [60, 64, 67], 'C inversi 1': [64, 67, 72], 'C inversi 2': [67, 72, 76], 'F inversi 2': [60, 65, 69], 'G inversi 1': [59, 62, 67] }
+      : { C: [60, 64, 67], F: [65, 69, 72], G: [67, 71, 74], Am: [69, 72, 76] }
+    el.innerHTML = `<div id="ak-chip"></div><div id="pn"></div>${opt.inversi ? '<div class="aksi" style="margin-top:10px"><button class="btn merek kecil-btn" id="ak-prog">Mainin C → F → G → C (pakai inversi)</button></div>' : ''}<p class="kecil redup" style="margin-top:8px">Pilih akor buat liat dan dengerin nadanya.</p>`
+    const pn = piano($('#pn', el), opt.inversi ? 59 : 60, opt.inversi ? 79 : 77, null)
+    const bunyi = ns => { pn.tandai(ns); ns.forEach((m, i) => setTimeout(() => tutsSuara(m, 0.22), i * 30)) }
+    chipPilih($('#ak-chip', el), 'ak', Object.keys(AK), '', v => bunyi(AK[v]))
+    if (opt.inversi) $('#ak-prog', el).onclick = () => [[60, 64, 67], [60, 65, 69], [59, 62, 67], [60, 64, 67]].forEach((a, i) => setTimeout(() => bunyi(a), i * 800))
+  }
+  ALAT.interval = el => {
+    const IV = [[2, 'Sekunde'], [4, 'Terts'], [5, 'Kwart'], [7, 'Kwint'], [12, 'Oktaf']]
+    let soal, skor = 0, total = 0
+    el.innerHTML = '<div class="aksi"><button class="btn merek" id="iv-d">▶ Dengerin</button><button class="btn garis kecil-btn" id="iv-n">Soal baru</button></div><div class="opsi" id="iv-o" style="margin-top:12px"></div><div class="pesan" id="iv-p"></div><div class="kecil redup" id="iv-s"></div><div id="pn" style="margin-top:10px"></div>'
+    const pn = piano($('#pn', el), 60, 84, null)
+    const dengar = () => { const [a, b] = [soal.dasar, soal.dasar + soal.iv[0]]; tutsSuara(a); setTimeout(() => tutsSuara(b), 600); setTimeout(() => { tutsSuara(a, 0.2); tutsSuara(b, 0.2) }, 1300) }
+    const baru = () => { soal = { iv: IV[Math.floor(Math.random() * IV.length)], dasar: 60 + Math.floor(Math.random() * 8) }; pn.tandai([]); pesanDi($('#iv-p', el), ''); $('#iv-o', el).innerHTML = IV.map(([n, nama]) => `<button data-n="${n}">${nama} <span class="redup kecil">(${n} setengah nada)</span></button>`).join(''); $$('#iv-o button', el).forEach(b => b.onclick = () => { total++; const ok = +b.dataset.n === soal.iv[0]; if (ok) skor++; pn.tandai([soal.dasar, soal.dasar + soal.iv[0]]); pesanDi($('#iv-p', el), ok ? `Bener, ${soal.iv[1].toLowerCase()}!` : `Itu ${soal.iv[1].toLowerCase()}. Dengerin lagi bedanya.`, ok ? 'ok' : 'salah'); $('#iv-s', el).textContent = `Skor ${skor}/${total}` }); dengar() }
+    $('#iv-d', el).onclick = dengar; $('#iv-n', el).onclick = baru
+    baru()
   }
 
   // ---------- drum ----------
   const BARIS = [['kick', 'Kick'], ['snare', 'Snare'], ['hat', 'Hi-hat'], ['tom', 'Tom']]
   const PRESET = {
     'Rock dasar': { kick: [1, 0, 0, 0, 1, 0, 0, 0], snare: [0, 0, 1, 0, 0, 0, 1, 0], hat: [1, 1, 1, 1, 1, 1, 1, 1], tom: [0, 0, 0, 0, 0, 0, 0, 0] },
+    '16-an hi-hat': { kick: [1, 0, 0, 0, 1, 0, 1, 0], snare: [0, 0, 1, 0, 0, 0, 1, 0], hat: [1, 1, 1, 1, 1, 1, 1, 1], tom: [0, 0, 0, 0, 0, 0, 0, 0] },
     'Fill snare': { kick: [1, 0, 0, 0, 0, 0, 0, 0], snare: [1, 1, 1, 1, 0, 0, 0, 0], hat: [0, 0, 0, 0, 0, 0, 0, 0], tom: [0, 0, 0, 0, 1, 1, 1, 1] },
     'Disko': { kick: [1, 0, 1, 0, 1, 0, 1, 0], snare: [0, 0, 1, 0, 0, 0, 1, 0], hat: [0, 1, 0, 1, 0, 1, 0, 1], tom: [0, 0, 0, 0, 0, 0, 0, 0] },
     'Santai': { kick: [1, 0, 0, 1, 0, 0, 1, 0], snare: [0, 0, 1, 0, 0, 0, 1, 0], hat: [1, 0, 1, 0, 1, 0, 1, 1], tom: [0, 0, 0, 0, 0, 0, 0, 0] },
@@ -613,14 +683,15 @@
     $('#sq-b', el).oninput = e => { bpm = +e.target.value; $('#sq-bn', el).textContent = bpm; if (jalan) { clearInterval(jalan); jalan = setInterval(tik, 30000 / bpm) } }
     tambahBersih(stop); seq()
   }
-  ALAT.rudimen = el => {
-    const RD = { 'Single stroke': 'RLRLRLRL', 'Double stroke': 'RRLLRRLL', 'Paradiddle': 'RLRRLRLL' }
-    let nama = 'Single stroke', ix = 0, bener = 0, salah = 0, metro = null
+  ALAT.rudimen = (el, opt = {}) => {
+    const SEMUA = { 'Single stroke': 'RLRLRLRL', 'Double stroke': 'RRLLRRLL', 'Paradiddle': 'RLRRLRLL', 'Double paradiddle': 'RLRLRRLRLRLL' }
+    const RD = Object.fromEntries((opt.daftar || ['Single stroke', 'Double stroke', 'Paradiddle']).map(k => [k, SEMUA[k]]))
+    let nama = Object.keys(RD)[0], ix = 0, bener = 0, salah = 0, metro = null
     el.innerHTML = '<div id="rd-chip"></div><div class="sticking" id="rd-s"></div><div class="lr"><button class="btn garis" id="rd-L">L<br><span class="kecil redup">tombol F</span></button><button class="btn garis" id="rd-R">R<br><span class="kecil redup">tombol J</span></button></div><div class="kontrol"><span class="kecil">Bener <b id="rd-b">0</b> · Salah <b id="rd-x">0</b></span><button class="btn garis kecil-btn" id="rd-m">Nyalain metronom</button></div><div class="pesan" id="rd-p"></div>'
-    const gambar = () => { $('#rd-s', el).innerHTML = RD[nama].split('').map((h, i) => `<span class="${i === ix ? 'kini' : i < ix ? 'udah' : ''}">${h}</span>`).join('') }
+    const gambar = () => { $('#rd-s', el).style.gridTemplateColumns = `repeat(${RD[nama].length > 8 ? 6 : 8}, minmax(0, 1fr))`; $('#rd-s', el).innerHTML = RD[nama].split('').map((h, i) => `<span class="${i === ix ? 'kini' : i < ix ? 'udah' : ''}">${h}</span>`).join('') }
     const pukul = h => {
       DRUM.snare(ac().currentTime)
-      if (RD[nama][ix] === h) { bener++; ix++; if (ix >= 8) { ix = 0; pesanDi($('#rd-p', el), 'Satu putaran rapi! Ulang terus, terus naikin tempo.', 'ok') } }
+      if (RD[nama][ix] === h) { bener++; ix++; if (ix >= RD[nama].length) { ix = 0; pesanDi($('#rd-p', el), 'Satu putaran rapi! Ulang terus, terus naikin tempo.', 'ok') } }
       else { salah++; pesanDi($('#rd-p', el), `Harusnya ${RD[nama][ix]}.`, 'salah') }
       $('#rd-b', el).textContent = bener; $('#rd-x', el).textContent = salah; gambar()
     }
@@ -806,6 +877,57 @@
       pesanDi($('#sp-p', el), ok1 && ok2 ? 'Komposisi mantap: objek di titik potong, cakrawala di garis sepertiga.' : !ok1 ? 'Geser pohon ke salah satu titik potong garis.' : 'Pohon udah pas. Sekarang taruh cakrawala di garis sepertiga atas atau bawah.', ok1 && ok2 ? 'ok' : 'salah')
     }
     posisi()
+  }
+
+  // ---------- alat tambahan: arsir, histogram, edit ----------
+  ALAT.arsir = el => {
+    el.innerHTML = ''
+    const { kv, cx, titik } = kanvasDasar(el, 260)
+    el.insertAdjacentHTML('beforeend', '<div class="aksi" style="margin-top:10px"><button class="btn merek kecil-btn" id="ar-c">Cek skala value</button><button class="btn garis kecil-btn" id="ar-h">Bersihin</button></div><div class="pesan" id="ar-p"></div><div class="nilai-kotak" id="ar-n"></div>')
+    const KT = [0, 1, 2, 3, 4].map(i => [40 + i * 170, 50, 140, 160])
+    const kosong = () => { cx.fillStyle = '#fff'; cx.fillRect(0, 0, 900, 260); cx.strokeStyle = '#9AA3B2'; cx.lineWidth = 2; KT.forEach(([x, y, w, h], i) => { cx.strokeRect(x, y, w, h); cx.fillStyle = '#9AA3B2'; cx.font = '600 16px sans-serif'; cx.fillText(String(i + 1), x + 4, y - 10) }) }
+    let aktif = false
+    kv.addEventListener('pointerdown', e => { kv.setPointerCapture(e.pointerId); aktif = true; const [x, y] = titik(e); cx.strokeStyle = '#0E1525'; cx.lineWidth = 3; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(x, y) })
+    kv.addEventListener('pointermove', e => { if (!aktif) return; const [x, y] = titik(e); cx.lineTo(x, y); cx.stroke() })
+    kv.addEventListener('pointerup', () => { aktif = false })
+    $('#ar-h', el).onclick = () => { kosong(); pesanDi($('#ar-p', el), ''); $('#ar-n', el).innerHTML = '' }
+    $('#ar-c', el).onclick = () => {
+      const gelap = KT.map(([x, y, w, h]) => { const d = cx.getImageData(x + 4, y + 4, w - 8, h - 8).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += 255 - (d[i] + d[i + 1] + d[i + 2]) / 3; return Math.round(s / (d.length / 4) / 255 * 100) })
+      $('#ar-n', el).innerHTML = gelap.map(g => `<span>${g}%</span>`).join('')
+      const naik = gelap.every((g, i) => i === 0 || g > gelap[i - 1]), lebar = gelap[4] - gelap[0]
+      pesanDi($('#ar-p', el), naik && lebar >= 40 ? 'Mantap, gradasinya rata dari terang ke gelap.' : !naik ? 'Belum naik terus. Tiap kotak harus lebih gelap dari kotak kirinya.' : 'Urutannya bener, tapi kotak 5 kurang gelap. Rapatin dan silangin garisnya.', naik && lebar >= 40 ? 'ok' : 'salah')
+    }
+    kosong()
+  }
+  const DIST = (() => { const a = []; for (let i = 0; i < 64; i++) a.push(Math.exp(-((i - 22) ** 2) / 90) * 0.8 + Math.exp(-((i - 42) ** 2) / 60)); return a })()
+  ALAT.histogram = el => {
+    let ev = 0, tebak = null
+    el.innerHTML = '<div class="foto" id="hg-f">' + ADEGAN + '</div><canvas id="hg-c" width="640" height="150" class="histo"></canvas><div class="slider-baris"><span class="kecil">Exposure</span><input type="range" id="hg-s" min="-3" max="3" step="0.5" value="0" aria-label="Exposure"><b id="hg-n">0</b></div><div class="aksi"><button class="btn garis kecil-btn" id="hg-t">Tebak histogram acak</button></div><div class="opsi" id="hg-o" hidden><button data-v="-1">Underexposed (kegelapan)</button><button data-v="0">Pas</button><button data-v="1">Overexposed (keterangan)</button></div><div class="pesan" id="hg-p"></div>'
+    const cv = $('#hg-c', el), cx = cv.getContext('2d')
+    const gambar = (e, sembunyi = false) => {
+      $('#hg-f', el).style.filter = `brightness(${Math.pow(2, e * 0.55).toFixed(2)})`; $('#hg-f', el).style.visibility = sembunyi ? 'hidden' : 'visible'
+      const b = new Array(64).fill(0); DIST.forEach((v, i) => { const j = Math.max(0, Math.min(63, Math.round(i + e * 9))); b[j] += v })
+      const mx = Math.max(...b); cx.clearRect(0, 0, 640, 150)
+      const warna = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#0E1525'
+      cx.fillStyle = warna; b.forEach((v, i) => { const h = v / mx * 140; cx.fillRect(i * 10, 150 - h, 9, h) })
+      cx.fillStyle = 'rgba(216,90,48,.9)'; if (b[0] > mx * 0.25) cx.fillRect(0, 0, 4, 150); if (b[63] > mx * 0.25) cx.fillRect(636, 0, 4, 150)
+    }
+    $('#hg-s', el).oninput = e => { tebak = null; $('#hg-o', el).hidden = true; ev = +e.target.value; $('#hg-n', el).textContent = (ev > 0 ? '+' : '') + ev; gambar(ev); pesanDi($('#hg-p', el), ev <= -1.5 ? 'Batang numpuk di kiri: kegelapan.' : ev >= 1.5 ? 'Batang numpuk di kanan dan kepotong: keterangan.' : 'Sebaran rata, ga kepotong di ujung.') }
+    $('#hg-t', el).onclick = () => { const p = [-2.5, -2, 0, 0.5, 2, 2.5][Math.floor(Math.random() * 6)]; tebak = p <= -1.5 ? -1 : p >= 1.5 ? 1 : 0; gambar(p, true); $('#hg-o', el).hidden = false; pesanDi($('#hg-p', el), 'Fotonya disembunyiin. Liat histogramnya aja, tebak kondisinya.') }
+    $$('#hg-o button', el).forEach(b => b.onclick = () => { if (tebak === null) return; const ok = +b.dataset.v === tebak; pesanDi($('#hg-p', el), ok ? 'Bener!' : 'Belum. Liat ke mana batangnya numpuk.', ok ? 'ok' : 'salah'); $('#hg-f', el).style.visibility = 'visible'; tebak = null })
+    gambar(0)
+  }
+  ALAT.edit = el => {
+    const NIL = { ex: 0.7, ko: 0.75, su: -35, sa: 0.6 }
+    el.innerHTML = '<div class="foto" id="ed-f">' + ADEGAN + '<div class="lap cast" id="ed-c"></div></div><div class="slider-baris"><span class="kecil">Exposure</span><input type="range" id="ed-ex" min="0.4" max="1.6" step="0.05" aria-label="Exposure"><b id="ed-exn"></b></div><div class="slider-baris"><span class="kecil">Kontras</span><input type="range" id="ed-ko" min="0.5" max="1.6" step="0.05" aria-label="Kontras"><b id="ed-kon"></b></div><div class="slider-baris"><span class="kecil">Suhu warna</span><input type="range" id="ed-su" min="-60" max="60" step="5" aria-label="Suhu warna"><b id="ed-sun"></b></div><div class="slider-baris"><span class="kecil">Saturasi</span><input type="range" id="ed-sa" min="0" max="2" step="0.05" aria-label="Saturasi"><b id="ed-san"></b></div><div class="aksi"><button class="btn merek kecil-btn" id="ed-cek">Cek hasil edit</button><button class="btn garis kecil-btn" id="ed-r">Reset</button></div><div class="pesan" id="ed-p"></div>'
+    const segar = () => { $('#ed-f', el).style.filter = `brightness(${NIL.ex}) contrast(${NIL.ko}) saturate(${NIL.sa})`; const c = $('#ed-c', el); c.style.background = NIL.su < 0 ? '#2E7BFF' : '#FF8A1E'; c.style.opacity = Math.min(0.5, Math.abs(NIL.su) / 110).toFixed(2); c.style.mixBlendMode = 'multiply'; ;['ex', 'ko', 'su', 'sa'].forEach(k => { $('#ed-' + k, el).value = NIL[k]; $('#ed-' + k + 'n', el).textContent = k === 'su' ? (NIL.su > 0 ? '+' : '') + NIL.su : (+NIL[k]).toFixed(2) }) }
+    ;['ex', 'ko', 'su', 'sa'].forEach(k => $('#ed-' + k, el).oninput = e => { NIL[k] = +e.target.value; segar() })
+    $('#ed-r', el).onclick = () => { Object.assign(NIL, { ex: 0.7, ko: 0.75, su: -35, sa: 0.6 }); pesanDi($('#ed-p', el), ''); segar() }
+    $('#ed-cek', el).onclick = () => {
+      const m = []; if (NIL.ex < 0.9) m.push('masih kegelapan'); if (NIL.ex > 1.2) m.push('kebanyakan terang'); if (NIL.ko < 0.9) m.push('kontras masih lemah'); if (NIL.ko > 1.35) m.push('kontras kekerasan'); if (Math.abs(NIL.su) > 10) m.push(NIL.su < 0 ? 'warna masih kebiruan' : 'warna kekuningan'); if (NIL.sa < 0.85) m.push('warna masih pucat'); if (NIL.sa > 1.4) m.push('saturasi norak')
+      pesanDi($('#ed-p', el), m.length ? 'Belum natural: ' + m.join(', ') + '.' : 'Natural! Terang, kontras, dan warnanya pas.', m.length ? 'salah' : 'ok')
+    }
+    segar()
   }
 
   // ---------- main bebas ----------
