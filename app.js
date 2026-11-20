@@ -66,7 +66,23 @@
 
   // ---------- audio ----------
   let AC = null
-  const ac = () => { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC }
+  const ac = () => { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state !== 'running') AC.resume(); return AC }
+  // iPhone: suara Web Audio dibisuin kalau HP mode senyap, dan audio baru kebuka lewat sentuhan (touchend/click).
+  // Jadi di sentuhan pertama: minta sesi audio "playback", puter audio senyap lewat elemen <audio>, terus bunyiin buffer kosong.
+  const SENYAP = (() => { // WAV 8-bit 8 kHz, 0,2 detik hening
+    const n = 1600, b = new Uint8Array(44 + n), v = new DataView(b.buffer), tulis = (o, s) => [...s].forEach((c, i) => b[o + i] = c.charCodeAt(0))
+    tulis(0, 'RIFF'); v.setUint32(4, 36 + n, true); tulis(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); tulis(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44)
+    try { return URL.createObjectURL(new Blob([b], { type: 'audio/wav' })) } catch (e) { return '' }
+  })()
+  let terbuka = false
+  const bukaAudio = () => {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback' } catch (e) {}
+    try { const a = ac(); const b = a.createBuffer(1, 1, 22050), s = a.createBufferSource(); s.buffer = b; s.connect(a.destination); s.start(0); a.resume() } catch (e) {}
+    if (!terbuka) { terbuka = true; try { const el = new Audio(SENYAP); el.setAttribute('playsinline', ''); el.loop = true; el.volume = 0.01; el.play().catch(() => { terbuka = false }) } catch (e) { terbuka = false } }
+  }
+  ;['touchend', 'click', 'keydown', 'pointerup'].forEach(t => document.addEventListener(t, bukaAudio, { capture: true, passive: true }))
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && AC && AC.state !== 'running') AC.resume() })
   const hz = m => 440 * Math.pow(2, (m - 69) / 12)
   function petik(f, tunda = 0, vol = 0.32) {
     const a = ac(), sr = a.sampleRate, len = Math.floor(sr * 1.5), buf = a.createBuffer(1, len, sr), d = buf.getChannelData(0)
