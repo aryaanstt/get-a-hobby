@@ -718,7 +718,7 @@
     el.insertAdjacentHTML('beforeend', '<div class="aksi" style="margin-top:10px"><button class="btn garis kecil-btn" id="gr-baru">Garis baru</button></div><div class="pesan" id="gr-p"></div>')
     let A, B, jejak = [], aktif = false, skor = []
     const baru = () => { const r = () => [80 + Math.random() * 740, 60 + Math.random() * 380]; do { A = r(); B = r() } while (Math.hypot(A[0] - B[0], A[1] - B[1]) < 300); jejak = []; gambar() }
-    const gambar = () => { cx.fillStyle = '#fff'; cx.fillRect(0, 0, kv.width, kv.height); [[A, '#D85A30'], [B, '#378ADD']].forEach(([p, c]) => { cx.fillStyle = c; cx.beginPath(); cx.arc(p[0], p[1], 9, 0, 7); cx.fill() }); if (jejak.length) { cx.strokeStyle = '#0E1525'; cx.lineWidth = 4; cx.lineCap = 'round'; cx.beginPath(); jejak.forEach((p, i) => i ? cx.lineTo(...p) : cx.moveTo(...p)); cx.stroke() } }
+    const gambar = () => { cx.fillStyle = '#fff'; cx.fillRect(0, 0, kv.width, kv.height); [[A, '#7B4FD6'], [B, '#378ADD']].forEach(([p, c]) => { cx.fillStyle = c; cx.beginPath(); cx.arc(p[0], p[1], 9, 0, 7); cx.fill() }); if (jejak.length) { cx.strokeStyle = '#0E1525'; cx.lineWidth = 4; cx.lineCap = 'round'; cx.beginPath(); jejak.forEach((p, i) => i ? cx.lineTo(...p) : cx.moveTo(...p)); cx.stroke() } }
     kv.addEventListener('pointerdown', e => { kv.setPointerCapture(e.pointerId); aktif = true; jejak = [titik(e)]; gambar() })
     kv.addEventListener('pointermove', e => { if (aktif) { jejak.push(titik(e)); gambar() } })
     kv.addEventListener('pointerup', () => {
@@ -738,7 +738,7 @@
     el.insertAdjacentHTML('beforeend', '<div class="aksi" style="margin-top:10px"><button class="btn garis kecil-btn" id="el-baru">Lingkaran baru</button></div><div class="pesan" id="el-p"></div>')
     let C, R, jejak = [], aktif = false
     const baru = () => { R = 70 + Math.random() * 110; C = [R + 40 + Math.random() * (900 - 2 * R - 80), R + 30 + Math.random() * (500 - 2 * R - 60)]; jejak = []; gambar() }
-    const gambar = () => { cx.fillStyle = '#fff'; cx.fillRect(0, 0, kv.width, kv.height); cx.setLineDash([8, 8]); cx.strokeStyle = '#C3CAD6'; cx.lineWidth = 2; cx.beginPath(); cx.arc(C[0], C[1], R, 0, 7); cx.stroke(); cx.setLineDash([]); if (jejak.length) { cx.strokeStyle = '#D85A30'; cx.lineWidth = 3.5; cx.lineCap = 'round'; cx.beginPath(); jejak.forEach((p, i) => i ? cx.lineTo(...p) : cx.moveTo(...p)); cx.stroke() } }
+    const gambar = () => { cx.fillStyle = '#fff'; cx.fillRect(0, 0, kv.width, kv.height); cx.setLineDash([8, 8]); cx.strokeStyle = '#C3CAD6'; cx.lineWidth = 2; cx.beginPath(); cx.arc(C[0], C[1], R, 0, 7); cx.stroke(); cx.setLineDash([]); if (jejak.length) { cx.strokeStyle = '#7B4FD6'; cx.lineWidth = 3.5; cx.lineCap = 'round'; cx.beginPath(); jejak.forEach((p, i) => i ? cx.lineTo(...p) : cx.moveTo(...p)); cx.stroke() } }
     kv.addEventListener('pointerdown', e => { kv.setPointerCapture(e.pointerId); aktif = true; jejak = [titik(e)]; gambar() })
     kv.addEventListener('pointermove', e => { if (aktif) { jejak.push(titik(e)); gambar() } })
     kv.addEventListener('pointerup', () => {
@@ -767,13 +767,13 @@
         garis(a, b); garis(a, aL); garis(b, bL); garis(a, aR); garis(b, bR); garis(aL, bL); garis(aR, bR)
         const isec = (p1, p2, p3, p4) => { const d = (p1[0] - p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0] - p4[0]); const t = ((p1[0] - p3[0]) * (p3[1] - p4[1]) - (p1[1] - p3[1]) * (p3[0] - p4[0])) / d; return [p1[0] + t * (p2[0] - p1[0]), p1[1] + t * (p2[1] - p1[1])] }
         const top = isec(aL, R, aR, L); if (hor < y1) { garis(aL, top, 2, '#8E98AA', [4, 4]); garis(aR, top, 2, '#8E98AA', [4, 4]) } else { garis(aL, top); garis(aR, top) }
-        vp.forEach(p => { cx.fillStyle = '#D85A30'; cx.beginPath(); cx.arc(p[0], hor, 10, 0, 7); cx.fill() })
+        vp.forEach(p => { cx.fillStyle = '#7B4FD6'; cx.beginPath(); cx.arc(p[0], hor, 10, 0, 7); cx.fill() })
       } else {
         const V = vp[0], f = [[360, 300], [540, 300], [540, 430], [360, 430]]
         f.forEach(p => garis(p, V, 1, '#C3CAD6', [6, 6]))
         const bk = f.map(p => ke(p, [V[0], hor], 0.3))
         for (let i = 0; i < 4; i++) { garis(f[i], f[(i + 1) % 4]); garis(f[i], bk[i], 2); garis(bk[i], bk[(i + 1) % 4], 2, '#8E98AA') }
-        cx.fillStyle = '#D85A30'; cx.beginPath(); cx.arc(V[0], hor, 10, 0, 7); cx.fill()
+        cx.fillStyle = '#7B4FD6'; cx.beginPath(); cx.arc(V[0], hor, 10, 0, 7); cx.fill()
       }
     }
     kv.addEventListener('pointerdown', e => { const [x, y] = titik(e); kv.setPointerCapture(e.pointerId); const t = (mode === '2 titik' ? vp : [vp[0]]).findIndex(p => Math.hypot(p[0] - x, hor - y) < 30); seret = t >= 0 ? t : Math.abs(y - hor) < 25 ? 'h' : null })
